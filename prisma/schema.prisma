@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  projects  Project[]
+  tags      Tag[]
+  rules     Rule[]
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  icon        String   @default("📝")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries     Entry[]
+  rules       Rule[]
+}
+
+model Entry {
+  id          String        @id @default(cuid())
+  title       String
+  content     String
+  weather     String?
+  temperature String?
+  weatherIcon String?
+  lunarDate   String?
+  dayOfWeek   String?
+  location    String?
+  projectId   String
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tags        EntryTag[]
+  history     EditHistory[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Tag {
+  id      String     @id @default(cuid())
+  name    String
+  userId  String
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries EntryTag[]
+  @@unique([name, userId])
+}
+
+model EntryTag {
+  entryId String
+  tagId   String
+  entry   Entry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  @@id([entryId, tagId])
+}
+
+model Rule {
+  id          String   @id @default(cuid())
+  name        String
+  prompt      String
+  isDefault   Boolean  @default(false)
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model EditHistory {
+  id          String   @id @default(cuid())
+  entryId     String
+  entry       Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  weather     String?
+  temperature String?
+  weatherIcon String?
+  lunarDate   String?
+  dayOfWeek   String?
+  location    String?
+  editedAt    DateTime @default(now())
+}
