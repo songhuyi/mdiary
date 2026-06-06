@@ -1,44 +1,56 @@
-# Stage 1: Install dependencies
-FROM node:20-alpine AS deps
+# Stage 1: Build the application
+FROM node:20-slim AS builder
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
 
-# Stage 2: Build the application
-FROM node:20-alpine AS builder
-WORKDIR /app
+# Install build essentials for better-sqlite3 native compilation
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
+# Install dependencies (including devDependencies needed for build)
 COPY package.json package-lock.json ./
 RUN npm ci
+
+# Copy source and config files
 COPY . .
+
+# Provide a dummy DATABASE_URL so prisma generate can parse the config
+ENV DATABASE_URL="file:/app/data/dev.db"
+
+# Generate Prisma client from schema
 RUN npx prisma generate
+
+# Build Next.js (standalone output mode)
 RUN npm run build
 
-# Stage 3: Production runner
-FROM node:20-alpine AS runner
+# Stage 2: Production runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy built assets
-COPY --from=builder /app/public ./public
+# Copy standalone output (includes all bundled JS deps)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+
+# Copy static assets (served by Next.js at /_next/static)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma files needed at runtime
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
-COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
+# Copy public files
+COPY --from=builder /app/public ./public
 
-# Copy prisma schema and config
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./
+# Copy native modules that cannot be bundled (better-sqlite3 .node binary)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
-# Create data directory for SQLite
+# Copy Prisma schema and config (needed for runtime)
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./
+
+# Create data directory for SQLite database persistence
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
 USER nextjs
@@ -46,5 +58,9 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+# Health check: verify the app responds on port 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 CMD ["node", "server.js"]

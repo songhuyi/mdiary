@@ -1,0 +1,42 @@
+# Dependencies — reinstalled in container
+node_modules/
+
+# Next.js build output — regenerated in container
+.next/
+out/
+build/
+
+# Git metadata — irrelevant to build
+.git/
+.gitignore
+
+# SQLite databases — must NOT leak into image
+*.db
+data/
+
+# Environment files — secrets, never in image
+.env*
+
+# Documentation — not needed for build
+*.md
+LICENSE
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Generated Prisma client — regenerated via prisma generate
+src/generated/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker files themselves
+.dockerignore
+docker-compose*.yml
+Dockerfile
+
+# Cache
+.cache/
+node_modules/.cache/

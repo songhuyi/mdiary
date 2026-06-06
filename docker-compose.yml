@@ -1,0 +1,35 @@
+services:
+  diary:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: diary
+    restart: unless-stopped
+
+    # Only expose to localhost — nginx will proxy from port 80
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    volumes:
+      # Persist SQLite database outside the container
+      - ./data:/app/data
+
+    env_file:
+      - .env
+
+    environment:
+      - NODE_ENV=production
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    networks:
+      - diary-net
+
+networks:
+  diary-net:
+    driver: bridge

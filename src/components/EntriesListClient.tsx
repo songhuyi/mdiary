@@ -20,7 +20,7 @@ interface Entry {
   lunarDate: string | null;
   dayOfWeek: string | null;
   location: string | null;
-  updatedAt: Date;
+  updatedAt: string | Date;
   project: { id: string; name: string; icon: string };
   tags: { tag: { name: string } }[];
 }
