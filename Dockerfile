@@ -28,15 +28,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
 # Copy standalone output (includes all bundled JS deps)
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder /app/.next/standalone ./
 
 # Copy static assets (served by Next.js at /_next/static)
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/.next/static ./.next/static
 
 # Copy public files
 COPY --from=builder /app/public ./public
@@ -44,16 +40,14 @@ COPY --from=builder /app/public ./public
 # Copy native module that cannot be bundled (better-sqlite3 .node binary)
 # Note: Prisma 7.x generates client to src/generated/prisma/, not node_modules/.prisma/
 # @prisma/client is pure JS and is bundled by Next.js standalone output
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
 # Copy Prisma schema and config (needed for runtime)
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
 
 # Create data directory for SQLite database persistence
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
-
-USER nextjs
+RUN mkdir -p /app/data
 
 EXPOSE 3000
 ENV PORT=3000
