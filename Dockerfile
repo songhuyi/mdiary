@@ -37,14 +37,8 @@ COPY --from=builder /app/.next/static ./.next/static
 # Copy public files
 COPY --from=builder /app/public ./public
 
-# Copy native module that cannot be bundled (better-sqlite3 .node binary)
-# Note: Prisma 7.x generates client to src/generated/prisma/, not node_modules/.prisma/
-# @prisma/client is pure JS and is bundled by Next.js standalone output
-COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
-
-# Copy Prisma CLI and client for runtime db push
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Copy all node_modules (includes native modules, Prisma CLI for db push)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy Prisma schema and config (needed for runtime)
 COPY --from=builder /app/prisma ./prisma
