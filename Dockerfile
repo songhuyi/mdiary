@@ -42,6 +42,10 @@ COPY --from=builder /app/public ./public
 # @prisma/client is pure JS and is bundled by Next.js standalone output
 COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
+# Copy Prisma CLI and client for runtime db push
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
 # Copy Prisma schema and config (needed for runtime)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
