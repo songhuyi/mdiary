@@ -4,10 +4,19 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password, inviteCode } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "请填写所有字段" }, { status: 400 });
+    }
+
+    // Validate invite code
+    const validInviteCode = process.env.INVITE_CODE;
+    if (!validInviteCode) {
+      return NextResponse.json({ error: "服务器未配置邀请码" }, { status: 500 });
+    }
+    if (inviteCode !== validInviteCode) {
+      return NextResponse.json({ error: "邀请码错误" }, { status: 400 });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });

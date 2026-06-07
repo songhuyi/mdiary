@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +23,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, inviteCode }),
       });
 
       const data = await res.json();
@@ -105,6 +106,17 @@ export default function RegisterPage() {
                 required
                 minLength={6}
                 className="w-full px-3 py-2.5 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none bg-stone-50 dark:bg-stone-800 text-stone-800 dark:text-stone-200 input-focus"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-stone-600 dark:text-stone-400 mb-1.5">邀请码</label>
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                required
+                className="w-full px-3 py-2.5 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none bg-stone-50 dark:bg-stone-800 text-stone-800 dark:text-stone-200 input-focus"
+                placeholder="输入邀请码"
               />
             </div>
             <button
